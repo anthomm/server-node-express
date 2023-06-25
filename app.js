@@ -21,7 +21,7 @@ app.post("/user", async (req, res) => {
     const user = {
         name: name,
         age: age,
-        created: Now(),
+        created: now(),
     }
 
     // 400 Validation errors should be done before sending a request to Firestore.
@@ -31,8 +31,8 @@ app.post("/user", async (req, res) => {
         id: newDoc.id,
         ...user,
     })
-        .then(() => (res.status(201).send({id: newDoc.id})))
-        .catch((e) => (ErrorResponse(e, res)))
+        .then(() => (res.status(http.CREATED).send({id: newDoc.id})))
+        .catch((e) => (errorResponse(e, res)))
 })
 
 // READ
@@ -45,7 +45,7 @@ app.get("/user/:id", async (req, res) => {
             exists(user)
             res.send(user.data())
         })
-        .catch((e) => (ErrorResponse(e, res)))
+        .catch((e) => (errorResponse(e, res)))
 })
 
 // UPDATE
@@ -56,15 +56,15 @@ app.patch("/user/:id", async (req, res) => {
     const update = {
         name: name,
         age: age,
-        updated: Now(),
+        updated: now(),
     }
 
     const reference = await db.collection("user").doc(id)
     await reference.get()
         .then(x => exists(x))
         .then(() => (reference.update({...update})))
-        .then(() => (res.status(204).send()))
-        .catch((e) => (ErrorResponse(e, res)))
+        .then(() => (res.status(http.NO_CONTENT).send()))
+        .catch((e) => (errorResponse(e, res)))
 })
 
 // DELETE
@@ -76,8 +76,8 @@ app.delete("/user/:id", async (req, res) => {
             exists(user)
             user.ref.delete()
         })
-        .then(() => (res.status(204).send()))
-        .catch((e) => (ErrorResponse(e, res)))
+        .then(() => (res.status(http.NO_CONTENT).send()))
+        .catch((e) => (errorResponse(e, res)))
 })
 
 // SEARCH
@@ -91,7 +91,7 @@ app.get("/user", async (req, res) => {
             })
             res.send(docs)
         })
-        .catch((e) => (ErrorResponse(e, res)))
+        .catch((e) => (errorResponse(e, res)))
 })
 
 // ROOT
@@ -109,7 +109,7 @@ app.listen(port, () => {
     console.log(`Listening on: ${port}`)
 })
 
-function DefaultErrorMessage(error) {
+function defaultErrorMessage(error) {
     return {
         status: error.status ?? "",
         code: error.code ?? "",
@@ -117,7 +117,7 @@ function DefaultErrorMessage(error) {
     }
 }
 
-function Now() {
+function now() {
     return new Date().toISOString()
 }
 
@@ -129,6 +129,6 @@ function exists(x) {
     }
 }
 
-function ErrorResponse(e, res) {
-    res.status(e.status ?? http.BAD_REQUEST).send(DefaultErrorMessage(e))
+function errorResponse(e, res) {
+    res.status(e.status ?? http.BAD_REQUEST).send(defaultErrorMessage(e))
 }
