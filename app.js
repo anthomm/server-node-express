@@ -63,7 +63,7 @@ app.patch("/user/:id", async (req, res) => {
     await reference.get()
         .then(x => exists(x))
         .then(() => (reference.update({...update})))
-        .then(() => (res.send()))
+        .then(() => (res.status(204).send()))
         .catch((e) => (ErrorResponse(e, res)))
 })
 
@@ -71,7 +71,11 @@ app.patch("/user/:id", async (req, res) => {
 app.delete("/user/:id", async (req, res) => {
 
     const id = req.params.id
-    await db.collection("user").doc(id).delete()
+    await db.collection("user").doc(id).get()
+        .then((user) => {
+            exists(user)
+            user.ref.delete()
+        })
         .then(() => (res.status(204).send()))
         .catch((e) => (ErrorResponse(e, res)))
 })
@@ -119,7 +123,7 @@ function Now() {
 
 function exists(x) {
     if (!x.exists) {
-        const e = new Error(`User:'${x.id}' Not Found`)
+        const e = new Error(`(${x.id}) Not Found`)
         e.status = http.NOT_FOUND
         throw e
     }
