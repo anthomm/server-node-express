@@ -24,14 +24,14 @@ app.post("/user", async (req, res) => {
         created: now(),
     }
 
-    // 400 Validation errors should be done before sending a request to Firestore.
+    // TODO: Validation.
 
-    const newDoc = await db.collection("user").doc()
-    newDoc.set({
-        id: newDoc.id,
+    const newUser = await db.collection("user").doc()
+    newUser.set({
+        id: newUser.id,
         ...user,
     })
-        .then(() => (res.status(http.CREATED).send({id: newDoc.id})))
+        .then(() => (res.status(http.CREATED).send({id: newUser.id})))
         .catch((e) => (errorResponse(e, res)))
 })
 
@@ -59,10 +59,11 @@ app.patch("/user/:id", async (req, res) => {
         updated: now(),
     }
 
-    const reference = await db.collection("user").doc(id)
-    await reference.get()
-        .then(x => exists(x))
-        .then(() => (reference.update({...update})))
+    await db.collection("user").doc(id).get()
+        .then(user => {
+            exists(user)
+            user.ref.update({...update})
+        })
         .then(() => (res.status(http.NO_CONTENT).send()))
         .catch((e) => (errorResponse(e, res)))
 })
@@ -96,7 +97,7 @@ app.get("/user", async (req, res) => {
 
 // ROOT
 app.get("/", (req, res) => {
-    res.send("You are HERE (Root)")
+    res.send("Hello, World!")
 })
 
 // DEFAULT
