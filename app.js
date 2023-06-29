@@ -73,8 +73,8 @@ app.patch("/user/:id", async (req, res) => {
         .then(user => {
             exists(user)
             user.ref.update({...update})
+            res.status(http.NO_CONTENT).send()
         })
-        .then(() => (res.status(http.NO_CONTENT).send()))
         .catch((e) => (errorResponse(e, res)))
 })
 
@@ -87,8 +87,8 @@ app.delete("/user/:id", async (req, res) => {
         .then((user) => {
             exists(user)
             user.ref.delete()
+            res.status(http.NO_CONTENT).send()
         })
-        .then(() => (res.status(http.NO_CONTENT).send()))
         .catch((e) => (errorResponse(e, res)))
 })
 
