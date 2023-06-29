@@ -67,6 +67,8 @@ app.patch("/user/:id", async (req, res) => {
         updated: now(),
     }
 
+    // TODO: Validation.
+
     await db.collection("user").doc(id).get()
         .then(user => {
             exists(user)
@@ -80,6 +82,7 @@ app.patch("/user/:id", async (req, res) => {
 app.delete("/user/:id", async (req, res) => {
 
     const id = req.params.id
+
     await db.collection("user").doc(id).get()
         .then((user) => {
             exists(user)
@@ -89,24 +92,61 @@ app.delete("/user/:id", async (req, res) => {
         .catch((e) => (errorResponse(e, res)))
 })
 
+
+app.put("/user/delete", async (req, res) => {
+
+    const {ids} = req.body
+
+    if (!Array.isArray(ids)) {
+        const e = new Error("Array of IDs expected.")
+        return errorResponse(e, res)
+    }
+
+    // e = existential quantification
+    let eSuccess = false
+    let failedIDs = []
+    for (const id of ids) {
+        await db.collection("user").doc(`${id}`).get()
+            .then((user) => {
+                exists(user)
+                user.ref.delete()
+                eSuccess = true
+            })
+            .catch((e) => (failedIDs.push(`${id}:${e.message}`)))
+    }
+    let eFail = failedIDs.length > 0
+
+    if (eSuccess && eFail) {
+        res.status(http.MULTI_STATUS).send({failed: failedIDs})
+    } else if (eSuccess && !eFail) {
+        res.status(http.NO_CONTENT).send()
+    } else if (!eSuccess && eFail) {
+        res.status(http.BAD_REQUEST).send({failed: failedIDs})
+    } else if (!eSuccess && !eFail) {
+        res.status(http.NOT_FOUND).send()
+    } else {
+        res.status(http.INTERNAL_SERVER_ERROR).send()
+    }
+})
+
 // SEARCH
 app.get("/user", async (req, res) => {
 
-    let search = await db.collection("user")
+    let users = db.collection("user")
     if (req.query.q) {
-        const qs = (req.query.q instanceof Array) ? req.query.q : [req.query.q]
+        const qs = (Array.isArray(req.query.q)) ? req.query.q : [req.query.q]
         for (const q of qs) {
             try {
                 let [key, operator, value] = q.split(",")
                 value = parse(value)
                 // noinspection JSCheckFunctionSignatures
-                search = search.where(key, operator, value)
+                users = users.where(key, operator, value)
             } catch (e) {
                 return errorResponse(e, res)
             }
         }
     }
-    await search.get()
+    await users.get()
         .then((snapshots) => {
             let docs = []
             snapshots.forEach((doc) => {
