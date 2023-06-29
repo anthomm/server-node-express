@@ -137,10 +137,11 @@ app.get("/user", async (req, res) => {
         const qs = (Array.isArray(req.query.q)) ? req.query.q : [req.query.q]
         for (const q of qs) {
             try {
-                let [key, operator, value] = q.split(",")
+                let [field, operator, value] = q.split(",")
+                validateQuery(field, operator, value)
                 value = parse(value)
                 // noinspection JSCheckFunctionSignatures
-                users = users.where(key, operator, value)
+                users = users.where(field, operator, value)
             } catch (e) {
                 return errorResponse(e, res)
             }
@@ -206,5 +207,15 @@ function parse(value) {
         return JSON.parse(value);
     } catch (_) {
         return value;
+    }
+}
+
+function validateQuery(...input) {
+    for (const i of input) {
+        if (!i) {
+            let e = new Error("A query input value is missing")
+            e.status = http.BAD_REQUEST
+            throw e
+        }
     }
 }
